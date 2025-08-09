@@ -368,6 +368,87 @@ def regenerate_docs_index_html() -> bool:
         except Exception:
             pass
 
+        # Rebuild Client Expenses tables (summary and detailed) from CSV
+        try:
+            # Detailed client expenses table rows
+            exp_df2 = pd.read_csv(CLIENT_EXPENSES_FILE, keep_default_na=False)
+            exp_df2['expense_date'] = pd.to_datetime(exp_df2.get('expense_date'), errors='coerce')
+            exp_df2['expense_person'] = exp_df2.get('expense_person').astype(str)
+            exp_df2['expense_category'] = exp_df2.get('expense_category').astype(str)
+            exp_df2['expense_amount'] = pd.to_numeric(exp_df2.get('expense_amount'), errors='coerce').fillna(0.0)
+            exp_df2['expense_quantity'] = pd.to_numeric(exp_df2.get('expense_quantity'), errors='coerce').fillna(1.0)
+            exp_df2['expense_description'] = exp_df2.get('expense_description').astype(str)
+            exp_df2['line_total'] = exp_df2['expense_amount'] * exp_df2['expense_quantity']
+
+            detailed_rows = []
+            for row in exp_df2.sort_values('expense_date').itertuples(index=False):
+                d = getattr(row, 'expense_date')
+                date_str = d.strftime('%Y-%m-%d') if pd.notna(d) else ''
+                person = getattr(row, 'expense_person')
+                category = getattr(row, 'expense_category') if hasattr(row, 'expense_category') else ''
+                amount_unit = float(getattr(row, 'expense_amount') or 0.0)
+                qty_val = float(getattr(row, 'expense_quantity') or 0.0)
+                qty_str = str(int(qty_val)) if qty_val.is_integer() else f"{qty_val}"
+                line_total = float(getattr(row, 'line_total') or 0.0)
+                desc = getattr(row, 'expense_description')
+                detailed_rows.append(
+                    f"<tr>\n"
+                    f"    <td>{date_str}</td>\n"
+                    f"    <td>{person}</td>\n"
+                    f"    <td>{category}</td>\n"
+                    f"    <td>Rs. {amount_unit:,.2f}</td>\n"
+                    f"    <td>{qty_str}</td>\n"
+                    f"    <td>Rs. {line_total:,.2f}</td>\n"
+                    f"    <td>{desc}</td>\n"
+                    f"</tr>"
+                )
+            detailed_html = "\n".join(detailed_rows)
+
+            # Replace detailed expenses tbody
+            updated = re.sub(
+                r"(<table class=\"detailed-expenses-table\">[\s\S]*?<tbody>)([\s\S]*?)(</tbody>)",
+                lambda m: m.group(1) + "\n" + detailed_html + "\n" + m.group(3),
+                updated,
+                flags=re.DOTALL
+            )
+
+            # Summary per client: Paid to client (I Paid) vs Spent by client
+            paid_df = pd.read_csv(CSV_FILE, keep_default_na=False)
+            if 'type' in paid_df.columns:
+                paid_df['type'] = paid_df['type'].astype(str).str.strip().str.lower()
+            paid_df['amount'] = pd.to_numeric(paid_df.get('amount'), errors='coerce').fillna(0.0)
+            paid_df['person'] = paid_df.get('person').astype(str)
+
+            paid_to_client = paid_df[paid_df.get('type') == 'i_paid'].groupby('person', dropna=False)['amount'].sum()
+            spent_by_client = exp_df2.groupby('expense_person', dropna=False)['line_total'].sum()
+
+            persons = sorted(set(paid_to_client.index.astype(str)).union(set(spent_by_client.index.astype(str))))
+            summary_rows = []
+            for p in persons:
+                paid_val = float(paid_to_client.get(p, 0.0))
+                spent_val = float(spent_by_client.get(p, 0.0))
+                remaining = paid_val - spent_val
+                rem_class = 'negative-balance' if remaining < 0 else 'positive-balance'
+                summary_rows.append(
+                    f"<tr>\n"
+                    f"    <td>{p}</td>\n"
+                    f"    <td>Rs. {paid_val:,.2f}</td>\n"
+                    f"    <td>Rs. {spent_val:,.2f}</td>\n"
+                    f"    <td class=\"{rem_class}\">Rs. {remaining:,.2f}</td>\n"
+                    f"</tr>"
+                )
+            summary_html = "\n".join(summary_rows)
+
+            # Replace client-summary-table tbody
+            updated = re.sub(
+                r"(<table class=\"client-summary-table\">[\s\S]*?<tbody>)([\s\S]*?)(</tbody>)",
+                lambda m: m.group(1) + "\n" + summary_html + "\n" + m.group(3),
+                updated,
+                flags=re.DOTALL
+            )
+        except Exception:
+            pass
+
         if updated != html:
             _write_text(SUMMARY_FILE, updated)
             return True
@@ -715,7 +796,7 @@ def generate_inquiry_pdf(person_name: str, start_date: datetime, end_date: datet
 
         # Ensure person-specific report directory: reports/<person_name_sanitized>/
         safe_person = "".join(c for c in str(person_name) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        out_dir = os.path.join('report', safe_person)
+        out_dir = os.path.join('reports', safe_person)
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, f'inquiry_{safe_person}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
         pdf.output(out_path)
@@ -765,9 +846,9 @@ def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime
         pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
-        # Ensure person-specific report directory: report/<person_name_sanitized>/
+        # Ensure person-specific report directory: reports/<person_name_sanitized>/
         safe_person = "".join(c for c in str(person_name) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        out_dir = os.path.join('report', safe_person)
+        out_dir = os.path.join('reports', safe_person)
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, f'bill_{safe_person}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
         pdf.output(out_path)
@@ -851,9 +932,9 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
         pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
-        # Ensure person-specific report directory: report/<person_name_sanitized>/
+        # Ensure person-specific report directory: reports/<person_name_sanitized>/
         safe_person = "".join(c for c in str(person_name) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
-        out_dir = os.path.join('report', safe_person)
+        out_dir = os.path.join('reports', safe_person)
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, f'invoice_{safe_person}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
         pdf.output(out_path)
