@@ -60,9 +60,14 @@ def write_csv_atomic(df, file_path: str) -> None:
     temp_path = file_path + '.tmp'
     df.to_csv(temp_path, index=False)
     os.replace(temp_path, file_path)
-    # If client expenses were updated, refresh docs immediately and push
+    # If a key CSV was updated, refresh docs immediately and push
     try:
-        if os.path.abspath(file_path) == os.path.abspath(CLIENT_EXPENSES_FILE):
+        abs_path = os.path.abspath(file_path)
+        if abs_path in (
+            os.path.abspath(CLIENT_EXPENSES_FILE),
+            os.path.abspath(CSV_FILE),
+            os.path.abspath(PEOPLE_FILE),
+        ):
             changed = regenerate_docs_index_html()
             try:
                 git_push()
@@ -443,6 +448,94 @@ def regenerate_docs_index_html() -> bool:
             updated = re.sub(
                 r"(<table class=\"client-summary-table\">[\s\S]*?<tbody>)([\s\S]*?)(</tbody>)",
                 lambda m: m.group(1) + "\n" + summary_html + "\n" + m.group(3),
+                updated,
+                flags=re.DOTALL
+            )
+        except Exception:
+            pass
+
+        # Rebuild All Transactions table rows and PEOPLE object
+        try:
+            # Load payments
+            tx_df = pd.read_csv(CSV_FILE, keep_default_na=False)
+            # Normalize
+            tx_df['date'] = pd.to_datetime(tx_df.get('date'), errors='coerce')
+            tx_df['person'] = tx_df.get('person').astype(str)
+            tx_df['amount'] = pd.to_numeric(tx_df.get('amount'), errors='coerce').fillna(0.0)
+            tx_df['type'] = tx_df.get('type').astype(str).str.strip().str.lower()
+            tx_df['payment_method'] = tx_df.get('payment_method').astype(str).str.strip().str.lower()
+            tx_df['cheque_status'] = tx_df.get('cheque_status').astype(str)
+            # prefer transaction_status, fallback to status
+            status_col = 'transaction_status' if 'transaction_status' in tx_df.columns else ('status' if 'status' in tx_df.columns else None)
+            if status_col:
+                tx_df[status_col] = tx_df[status_col].astype(str).str.strip().str.lower()
+            tx_df['reference_number'] = tx_df.get('reference_number').astype(str)
+            tx_df['description'] = tx_df.get('description').astype(str)
+
+            # Build rows
+            tx_rows = []
+            tx_df_sorted = tx_df.sort_values('date')
+            for row in tx_df_sorted.itertuples(index=False):
+                d = getattr(row, 'date')
+                date_str = d.strftime('%Y-%m-%d') if pd.notna(d) else ''
+                person = getattr(row, 'person')
+                amount = float(getattr(row, 'amount') or 0.0)
+                ttype = (getattr(row, 'type') or '').lower()
+                method = (getattr(row, 'payment_method') or '').lower()
+                cheque_status = getattr(row, 'cheque_status') or ''
+                ref = getattr(row, 'reference_number') or ''
+                desc = getattr(row, 'description') or ''
+                status_val = getattr(row, status_col) if status_col else ''
+
+                type_label = 'Paid' if ttype == 'i_paid' else ('Received' if ttype == 'paid_to_me' else ttype.title())
+                cheque_disp = '-' if not cheque_status or cheque_status in ('nan', 'none', 'null') else cheque_status.title()
+                status_disp = '-' if not status_val or status_val in ('nan', 'none', 'null') else status_val.title()
+
+                tx_rows.append(
+                    f"<tr data-date=\"{date_str}\" data-person=\"{person.lower()}\" data-type=\"{ttype}\" data-method=\"{method}\" data-cheque-status=\"{cheque_status.lower()}\" data-reference-number=\"{ref}\" data-amount-raw=\"{amount}\">\n"
+                    f"    <td data-label=\"Date\">{date_str}</td>\n"
+                    f"    <td data-label=\"Person\">{person}</td>\n"
+                    f"    <td data-label=\"Amount\">Rs. {amount:,.2f}</td>\n"
+                    f"    <td data-label=\"Type\">{type_label}</td>\n"
+                    f"    <td data-label=\"Method\">{method.title() if method else '-'}</td>\n"
+                    f"    <td data-label=\"Cheque Status\"><span class=\"status \">{cheque_disp}</span></td>\n"
+                    f"    <td data-label=\"Reference No.\">{ref}</td>\n"
+                    f"    <td data-label=\"Status\"><span class=\"status {status_val}\">{status_disp}</span></td>\n"
+                    f"    <td data-label=\"Description\">{desc}</td>\n"
+                    f"</tr>"
+                )
+            tx_html = "".join(tx_rows)
+
+            # Replace transactions tbody
+            updated = re.sub(
+                r"(<table id=\"transactions-table\">[\s\S]*?<tbody>)([\s\S]*?)(</tbody>)",
+                lambda m: m.group(1) + tx_html + m.group(3),
+                updated,
+                flags=re.DOTALL
+            )
+
+            # PEOPLE object from people.csv categories
+            ppl = pd.read_csv(PEOPLE_FILE, keep_default_na=False)
+            ppl['name'] = ppl.get('name').astype(str).str.strip()
+            ppl['category'] = ppl.get('category').astype(str).str.strip().str.lower()
+            investors = [n for n, c in zip(ppl['name'], ppl['category']) if c == 'investor']
+            clients = [n for n, c in zip(ppl['name'], ppl['category']) if c == 'client']
+            allp = sorted(set(ppl['name']))
+
+            def _arr(vals):
+                return '[' + ','.join([f'"{v}"' for v in vals]) + ']'
+
+            people_block = (
+                "const PEOPLE = {" +
+                f"investor: {_arr(investors)}," +
+                f" client: {_arr(clients)}," +
+                f" all: {_arr(allp)}" +
+                "};"
+            )
+
+            updated = re.sub(
+                r"const PEOPLE = \{[\s\S]*?\};",
+                people_block,
                 updated,
                 flags=re.DOTALL
             )
