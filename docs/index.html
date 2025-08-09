@@ -452,7 +452,7 @@
         <header>
             <h1 class="logo"><i class="fas fa-coins"></i>Payment Tracker</h1>
             <h2 class="report-title">Financial Summary Report</h2>
-            <div class="report-date"><i class="far fa-calendar-alt"></i>Generated on August 10, 2025 at 12:05 AM</div>
+            <div class="report-date"><i class="far fa-calendar-alt"></i>Generated on August 10, 2025 at 01:08 AM</div>
         </header>
 
         <div class="summary-cards">
@@ -475,11 +475,11 @@
                     <div class="card-icon"><i class="fas fa-arrow-alt-circle-up"></i></div>
                     <div>
                         <div class="card-title">Total Paid</div>
-                        <div class="card-amount">Rs. 0.00</div>
+                        <div class="card-amount">Rs. 5,000.00</div>
                     </div>
                 </div>
                 <div class="card-details">
-                    <div><i class="fas fa-hand-holding-usd"></i> Cash: Rs. 0.00</div>
+                    <div><i class="fas fa-hand-holding-usd"></i> Cash: Rs. 5,000.00</div>
                     <div><i class="fas fa-money-check"></i> Cheque: Rs. 0.00</div>
                     <div><i class="fas fa-hourglass-half"></i> Pending: Rs. 0.00</div>
                 </div>
@@ -489,7 +489,7 @@
                     <div class="card-icon"><i class="fas fa-balance-scale"></i></div>
                     <div>
                         <div class="card-title">Net Balance</div>
-                        <div class="card-amount">Rs.7,000.00</div>
+                        <div class="card-amount">Rs.2,000.00</div>
                     </div>
                 </div>
                 <div class="card-details">
@@ -516,7 +516,7 @@
                     <label for="name-filter">Person</label>
                     <select id="name-filter">
                         <option value="">All</option>
-                        <option value="Butt Feelings Phone">Butt Feelings Phone</option><option value="Heelo tester">Heelo tester</option>
+                        <option value="Ali Hassan">Ali Hassan</option><option value="Butt Feelings Phone">Butt Feelings Phone</option><option value="John Smith">John Smith</option><option value="Michael Brown">Michael Brown</option><option value="Sarah Johnson">Sarah Johnson</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -602,6 +602,22 @@
                                         <td data-label="Reference No.">A1245SSAd</td>
                                         <td data-label="Status"><span class="status completed">Completed</span></td>
                                         <td data-label="Description">CompleteInvestment</td>
+                                    </tr><tr data-date="2025-08-10"
+                                        data-person="butt feelings phone"
+                                        data-type="i_paid"
+                                        data-method="cash"
+                                        data-cheque-status=""
+                                        data-reference-number="75487547"
+                                        data-amount-raw="5000.0">
+                                        <td data-label="Date">2025-08-10</td>
+                                        <td data-label="Person">Butt Feelings Phone</td>
+                                        <td data-label="Amount">Rs. 5,000.00</td>
+                                        <td data-label="Type">Paid</td>
+                                        <td data-label="Method">Cash</td>
+                                        <td data-label="Cheque Status"><span class="status ">-</span></td>
+                                        <td data-label="Reference No.">75487547</td>
+                                        <td data-label="Status"><span class="status completed">Completed</span></td>
+                                        <td data-label="Description">FirstAgain99</td>
                                     </tr>
                         </tbody>
                     </table>
@@ -610,7 +626,29 @@
                     <h2 class="section-title">
                         <i class="fas fa-money-check-alt"></i> Client Expenses Overview
                     </h2>
-                    <p class='no-results'>No client spending overview available yet.</p>
+                    
+            <h3 class="section-subtitle"><i class="fas fa-chart-pie"></i> Spending Overview by Client</h3>
+            <table class="client-summary-table">
+                <thead>
+                    <tr>
+                        <th>Client Name</th>
+                        <th>Total Paid to Client</th>
+                        <th>Total Spent by Client</th>
+                        <th>Remaining Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+            
+                    <tr>
+                        <td>Butt Feelings Phone</td>
+                        <td>Rs. 5,000.00</td>
+                        <td>Rs. 0.00</td>
+                        <td class="positive-balance">Rs. 5,000.00</td>
+                    </tr>
+                
+                </tbody>
+            </table>
+            
                     <p class='no-results'>No detailed client expenses to display yet.</p>
                 </div>
             </div>
@@ -623,9 +661,9 @@
     <script>
         // People lists by category for dynamic person dropdown filtering
         const PEOPLE = {
-            investor: ["Heelo tester"],
+            investor: ["Ali Hassan","John Smith","Michael Brown","Sarah Johnson"],
             client: ["Butt Feelings Phone"],
-            all: ["Butt Feelings Phone","Heelo tester"]
+            all: ["Ali Hassan","Butt Feelings Phone","John Smith","Michael Brown","Sarah Johnson"]
         };
 
         function populatePersonOptions() {
