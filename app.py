@@ -392,7 +392,7 @@ def regenerate_docs_index_html() -> bool:
                 line_total = float(getattr(row, 'line_total') or 0.0)
                 desc = getattr(row, 'expense_description')
                 detailed_rows.append(
-                    f"<tr>\n"
+                    f"<tr data-date=\"{date_str}\" data-person=\"{person}\" data-category=\"{category}\" data-amount=\"{amount_unit}\" data-qty=\"{qty_val}\" data-total=\"{line_total}\">\n"
                     f"    <td>{date_str}</td>\n"
                     f"    <td>{person}</td>\n"
                     f"    <td>{category}</td>\n"
