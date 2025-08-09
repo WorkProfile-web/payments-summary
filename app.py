@@ -273,6 +273,103 @@ SUMMARY_FILE = os.path.join(REPO_PATH, "docs/index.html")
 SUMMARY_URL = "https://atonomous.github.io/payments-summary/"
 INVOICE_DIR = os.path.join(REPO_PATH, "docs", "invoices")
 
+# Utility: auto-update public HTML summary when data changes
+import re
+
+def _read_text(path: str) -> str:
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception:
+        return ''
+
+def _write_text(path: str, content: str) -> None:
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+def regenerate_docs_index_html() -> bool:
+    """Regenerate key values inside docs/index.html from current CSV data.
+    Returns True if file updated, False if no change or on failure.
+    """
+    try:
+        html = _read_text(SUMMARY_FILE)
+        if not html:
+            return False
+
+        # Compute totals from data
+        total_received = 0.0
+        total_paid = 0.0
+        total_client_expenses = 0.0
+
+        try:
+            pay_df = pd.read_csv(CSV_FILE, keep_default_na=False)
+            pay_df = clean_payments_data(pay_df)
+            total_received = pay_df[pay_df['type'].str.lower() == 'paid_to_me']['amount'].sum()
+            total_paid = pay_df[pay_df['type'].str.lower() == 'i_paid']['amount'].sum()
+        except Exception:
+            pass
+
+        try:
+            exp_df = pd.read_csv(CLIENT_EXPENSES_FILE, keep_default_na=False)
+            exp_df = clean_client_expenses_data(exp_df)
+            exp_df['line_total'] = pd.to_numeric(exp_df['expense_amount'], errors='coerce').fillna(0.0) * \
+                                   pd.to_numeric(exp_df['expense_quantity'], errors='coerce').fillna(1.0)
+            total_client_expenses = exp_df['line_total'].sum()
+        except Exception:
+            pass
+
+        # Helper to replace card amount given the card title
+        def replace_card_amount(doc: str, title: str, amount: float) -> str:
+            pattern = (
+                r"(<div class=\"card-title\">" + re.escape(title) + r"</div>\s*<div class=\"card-amount\">)Rs\.[^<]*(</div>)"
+            )
+            return re.sub(pattern, lambda m: f"{m.group(1)}Rs. {amount:,.2f}{m.group(2)}", doc, flags=re.DOTALL)
+
+        updated = html
+        updated = replace_card_amount(updated, "Total Received", float(total_received))
+        updated = replace_card_amount(updated, "Total Paid", float(total_paid))
+        updated = replace_card_amount(updated, "Total Client Expenses", float(total_client_expenses))
+
+        # Also update the standalone "Total Client Expenses:" summary line if present
+        updated = re.sub(
+            r"(Total Client Expenses:\s*Rs\.\s*)[\d,]+\.?\d*",
+            lambda m: f"{m.group(1)}{total_client_expenses:,.2f}",
+            updated
+        )
+
+        # Update person options in the filter dropdown
+        try:
+            ppl_df = pd.read_csv(PEOPLE_FILE, keep_default_na=False)
+            names = (ppl_df.get('name') or pd.Series(dtype=str)).astype(str).str.strip()
+            options_html = ''.join([f'<option value="{n}">{n}</option>' for n in names if n])
+            # Replace the options inside the select with id="name-filter"
+            updated = re.sub(
+                r"(<select id=\"name-filter\">\s*<option value=\"\">All</option>)(.*?)(</select>)",
+                lambda m: m.group(1) + options_html + m.group(3),
+                updated,
+                flags=re.DOTALL
+            )
+        except Exception:
+            pass
+
+        if updated != html:
+            _write_text(SUMMARY_FILE, updated)
+            return True
+        return False
+    except Exception:
+        return False
+
+def update_public_html_if_stale() -> None:
+    """Regenerate docs HTML and push on every run. Safe: only writes if content changes."""
+    try:
+        regenerate_docs_index_html()
+        try:
+            git_push()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
 # Data Processing Classes
 
 
@@ -560,7 +657,7 @@ def generate_inquiry_pdf(person_name: str, start_date: datetime, end_date: datet
         df['reference_number'] = df['reference_number'].astype(str).str.strip()
         df = clean_payments_data(df)
         mask = (
-            (df['person'] == person_name) &
+            (df['person'].astype(str).str.strip() == str(person_name).strip()) &
             (df['type'].str.lower() == 'i_paid') &
             (df['date'] >= pd.to_datetime(start_date)) &
             (df['date'] <= pd.to_datetime(end_date))
@@ -600,8 +697,11 @@ def generate_inquiry_pdf(person_name: str, start_date: datetime, end_date: datet
         pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
-        out_dir = _ensure_invoice_dir()
-        out_path = os.path.join(out_dir, f'inquiry_{person_name}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
+        # Ensure person-specific report directory: reports/<person_name_sanitized>/
+        safe_person = "".join(c for c in str(person_name) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        out_dir = os.path.join('report', safe_person)
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f'inquiry_{safe_person}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
         pdf.output(out_path)
         return out_path
     except Exception as e:
@@ -615,7 +715,7 @@ def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime
         df = pd.read_csv(CLIENT_EXPENSES_FILE, dtype={'original_transaction_ref_num': str}, keep_default_na=False)
         df = clean_client_expenses_data(df)
         mask = (
-            (df['expense_person'] == person_name) &
+            (df['expense_person'].astype(str).str.strip() == str(person_name).strip()) &
             (df['expense_date'] >= pd.to_datetime(start_date)) &
             (df['expense_date'] <= pd.to_datetime(end_date))
         )
@@ -649,8 +749,11 @@ def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime
         pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
-        out_dir = _ensure_invoice_dir()
-        out_path = os.path.join(out_dir, f'bill_{person_name}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
+        # Ensure person-specific report directory: report/<person_name_sanitized>/
+        safe_person = "".join(c for c in str(person_name) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        out_dir = os.path.join('report', safe_person)
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f'bill_{safe_person}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
         pdf.output(out_path)
         return out_path
     except Exception as e:
@@ -665,7 +768,7 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
         pay['reference_number'] = pay['reference_number'].astype(str).str.strip()
         pay = clean_payments_data(pay)
         pay_mask = (
-            (pay['person'] == person_name) &
+            (pay['person'].astype(str).str.strip() == str(person_name).strip()) &
             (pay['type'].str.lower() == 'i_paid') &
             (pay['date'] >= pd.to_datetime(start_date)) &
             (pay['date'] <= pd.to_datetime(end_date))
@@ -676,7 +779,7 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
         exp = pd.read_csv(CLIENT_EXPENSES_FILE, dtype={'original_transaction_ref_num': str}, keep_default_na=False)
         exp = clean_client_expenses_data(exp)
         exp_mask = (
-            (exp['expense_person'] == person_name) &
+            (exp['expense_person'].astype(str).str.strip() == str(person_name).strip()) &
             (exp['expense_date'] >= pd.to_datetime(start_date)) &
             (exp['expense_date'] <= pd.to_datetime(end_date))
         )
@@ -732,8 +835,11 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
         pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
-        out_dir = _ensure_invoice_dir()
-        out_path = os.path.join(out_dir, f'invoice_{person_name}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
+        # Ensure person-specific report directory: report/<person_name_sanitized>/
+        safe_person = "".join(c for c in str(person_name) if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+        out_dir = os.path.join('report', safe_person)
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f'invoice_{safe_person}_{start_date:%Y%m%d}_{end_date:%Y%m%d}.pdf')
         pdf.output(out_path)
         return out_path
     except Exception as e:
@@ -994,6 +1100,23 @@ def generate_html_summary(input_df: pd.DataFrame) -> None:
         people_df = pd.read_csv(PEOPLE_FILE)
         person_options_html = ''.join(
             f'<option value="{name}">{name}</option>' for name in sorted(people_df['name'].unique()))
+
+        # Prepare categorized people lists for client/investor filtering in HTML summary
+        if 'category' in people_df.columns:
+            _cat = people_df['category'].astype(str).str.lower()
+            investor_names = sorted(people_df[_cat == 'investor']['name'].dropna().astype(str).unique().tolist())
+            client_names = sorted(people_df[_cat == 'client']['name'].dropna().astype(str).unique().tolist())
+        else:
+            investor_names = []
+            client_names = []
+        all_person_names = sorted(people_df['name'].dropna().astype(str).unique().tolist())
+
+        # Turn lists into JS array literals (avoid needing json import)
+        def _to_js_array(names: List[str]) -> str:
+            return '[' + ','.join(f'"{n}"' for n in names) + ']'
+        investor_js = _to_js_array(investor_names)
+        client_js = _to_js_array(client_names)
+        all_js = _to_js_array(all_person_names)
 
         # Load and process client expenses data
         client_expenses_df_all = pd.DataFrame()
@@ -1755,6 +1878,36 @@ def generate_html_summary(input_df: pd.DataFrame) -> None:
         <p><i class="far fa-copyright"></i> {datetime.now().year} All Rights Reserved</p>
     </div>
     <script>
+        // People lists by category for dynamic person dropdown filtering
+        const PEOPLE = {{
+            investor: {investor_js},
+            client: {client_js},
+            all: {all_js}
+        }};
+
+        function populatePersonOptions() {{
+            const typeVal = $('#type-filter').val(); // '' | 'paid_to_me' | 'i_paid'
+            let list = PEOPLE.all;
+            if (typeVal === 'paid_to_me') {{ // Received -> investors
+                list = PEOPLE.investor;
+            }} else if (typeVal === 'i_paid') {{ // Paid -> clients
+                list = PEOPLE.client;
+            }}
+            const prev = $('#name-filter').val();
+            const $sel = $('#name-filter');
+            $sel.empty();
+            $sel.append('<option value="">All</option>');
+            list.forEach(function(name) {{
+                $sel.append('<option value="' + name + '">' + name + '</option>');
+            }});
+            // Restore previous selection if still valid; otherwise default to All
+            if (prev && list.map(String).includes(prev)) {{
+                $sel.val(prev);
+            }} else {{
+                $sel.val('');
+            }}
+        }}
+
         $(document).ready(function() {{
             // Set default date filter to last month
             const today = new Date();
@@ -1762,6 +1915,8 @@ def generate_html_summary(input_df: pd.DataFrame) -> None:
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
             $('#start-date').val(oneMonthAgo.toISOString().split('T')[0]);
             $('#end-date').val(today.toISOString().split('T')[0]);
+            // Initialize person options based on current type selection
+            populatePersonOptions();
             applyFilters();
 
             $('.tab-button').on('click', function() {{
@@ -1772,6 +1927,12 @@ def generate_html_summary(input_df: pd.DataFrame) -> None:
                 $('#' + tabId).addClass('active');
             }});
             $('.tab-button[data-tab="transactions-tab"]').click();
+
+            // Re-populate person list when type changes
+            $('#type-filter').on('change', function() {{
+                populatePersonOptions();
+                applyFilters();
+            }});
         }});
 
         function applyFilters() {{
@@ -1824,13 +1985,14 @@ def generate_html_summary(input_df: pd.DataFrame) -> None:
             $('#method-filter').val('');
             $('#status-filter').val('');
             $('#reference-number-filter').val('');
+            // Reset person options to All names when clearing type
+            populatePersonOptions();
             applyFilters();
         }}
     </script>
 </body>
 </html>
 """
-        # Create 'docs' directory if it doesn't exist
         if not os.path.exists(os.path.dirname(SUMMARY_FILE)):
             os.makedirs(os.path.dirname(SUMMARY_FILE))
         with open(SUMMARY_FILE, "w", encoding="utf-8") as f:
@@ -2339,6 +2501,8 @@ with st.sidebar:
 
 def reset_form_session_state_for_add_transaction():
     st.session_state['selected_transaction_type'] = 'Paid to Me'
+    # Also reset the radio's UI key to keep UI and logic in sync
+    st.session_state['selected_transaction_type_radio'] = 'Paid to Me'
     st.session_state['payment_method'] = 'cash'
     st.session_state['selected_person'] = "Select..."
     st.session_state['editing_row_idx'] = None
@@ -2383,58 +2547,86 @@ with transactions_tab:  # Core payment tracking functionality
     st.subheader("💰 Transaction Management")
 
 
+    # Transaction Type Selection (outside form for real-time updates)
+    st.markdown("""
+        <div style='background-color: white; padding: 1.5rem; border-radius: 0.5rem; margin: 1rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);'>
+            <h4 style='margin:0 0 1rem 0; color: #2c3e50;'>📝 Transaction Type</h4>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        # Transaction type selection outside form for real-time updates
+        selected_tx_type_local = st.radio(
+            "💱 Transaction Type",
+            ["Paid to Me", "I Paid"],
+            horizontal=True,
+            key='selected_transaction_type_radio',
+            help="Select whether you received payment or made a payment"
+        )
+        st.session_state['selected_transaction_type'] = selected_tx_type_local
+    with col2:
+        payment_method_local = st.radio(
+            "💳 Payment Method",
+            ["cash", "cheque"],
+            horizontal=True,
+            key='payment_method_radio',
+            help="Choose how the payment was made"
+        )
+        st.session_state['payment_method'] = payment_method_local
+
+    # Load and filter people based on transaction type (outside form for real-time updates)
+    try:
+        people_df = pd.read_csv(PEOPLE_FILE)
+        if 'category' in people_df.columns:
+            # Normalize category and name fields
+            cat_series = people_df['category'].astype(str).str.strip().str.lower()
+            name_series = people_df['name'].astype(str).str.strip()
+
+            # Use the radio button's current value directly
+            selected_tx_type_effective = selected_tx_type_local.strip().lower()
+
+            if selected_tx_type_effective == "i paid":
+                mask = cat_series == 'client'
+            elif selected_tx_type_effective == "paid to me":
+                mask = cat_series == 'investor'
+            else:
+                mask = pd.Series([False] * len(people_df))
+
+            filtered_people = name_series[mask].dropna().tolist()
+
+            # Debug info to help troubleshoot
+            unique_categories = cat_series.unique().tolist()
+            st.info(f"Debug: Transaction type: '{selected_tx_type_effective}', Categories found: {unique_categories}, Filtered people count: {len(filtered_people)}")
+
+            # If no matches found, show appropriate message and all people as fallback
+            if len(filtered_people) == 0:
+                if selected_tx_type_effective == "i paid":
+                    st.warning("No clients found in people.csv. Showing all people as fallback.")
+                elif selected_tx_type_effective == "paid to me":
+                    st.warning("No investors found in people.csv. Showing all people as fallback.")
+                filtered_people = name_series.dropna().tolist()
+        else:
+            # Fallback: if no category column, show all names
+            filtered_people = people_df['name'].dropna().astype(str).str.strip().tolist()
+    except (FileNotFoundError, pd.errors.EmptyDataError) as e:
+        st.error(f"Could not load people data file: {e}")
+        filtered_people = []
+    except pd.errors.ParserError as e:
+        st.error(f"Error parsing people data: {e}")
+        filtered_people = []
+
+    person_options = ["Select..."] + sorted(filtered_people)
+
+    if st.session_state['selected_person'] not in person_options:
+        st.session_state['selected_person'] = "Select..."
+
+    current_person_index = person_options.index(
+        st.session_state['selected_person'])
+
     # Add Transaction form
     with st.form("transaction_form", clear_on_submit=False):
         st.subheader("➕ Add New Transaction")
-
-        # Transaction Type and Method Selection with Enhanced UI
-        st.markdown("""
-            <div style='background-color: white; padding: 1.5rem; border-radius: 0.5rem; margin: 1rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);'>
-                <h4 style='margin:0 0 1rem 0; color: #2c3e50;'>📝 Transaction Details</h4>
-            </div>
-        """, unsafe_allow_html=True)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.session_state['selected_transaction_type'] = st.radio(
-                "💱 Transaction Type",
-                ["Paid to Me", "I Paid"],
-                horizontal=True,
-                key='selected_transaction_type_radio',
-                help="Select whether you received payment or made a payment"
-            )
-        with col2:
-            st.session_state['payment_method'] = st.radio(
-                "💳 Payment Method",
-                ["cash", "cheque"],
-                horizontal=True,
-                key='payment_method_radio',
-                help="Choose how the payment was made"
-            )
-
-        try:
-            people_df = pd.read_csv(PEOPLE_FILE)
-            # Always show clients in Add Transaction person picker
-            if 'category' in people_df.columns:
-                cat_series = people_df['category'].astype(str).str.lower()
-                filtered_people = people_df[cat_series == 'client']['name'].astype(str).tolist()
-            else:
-                # Fallback: if no category column, show all names
-                filtered_people = people_df['name'].dropna().astype(str).tolist()
-        except (FileNotFoundError, pd.errors.EmptyDataError) as e:
-            st.error(f"Could not load people data file: {e}")
-            filtered_people = []
-        except pd.errors.ParserError as e:
-            st.error(f"Error parsing people data: {e}")
-            filtered_people = []
-
-        person_options = ["Select..."] + sorted(filtered_people)
-
-        if st.session_state['selected_person'] not in person_options:
-            st.session_state['selected_person'] = "Select..."
-
-        current_person_index = person_options.index(
-            st.session_state['selected_person'])
 
         col1, col2 = st.columns(2)
         with col1:
@@ -2544,7 +2736,9 @@ with transactions_tab:  # Core payment tracking functionality
                                 x).strip().lower() == 'none' else str(x).strip()
                         )
 
-                    updated_df = pd.concat([existing_df, pd.DataFrame([new_row])], ignore_index=True)
+                    # Avoid FutureWarning by aligning new row columns with existing_df before concat
+                    new_row_df = pd.DataFrame([new_row]).reindex(columns=existing_df.columns)
+                    updated_df = pd.concat([existing_df, new_row_df], ignore_index=True)
                     updated_df = DataCleaner.clean_payments_data(updated_df)
                     write_csv_atomic(updated_df, CSV_FILE)
 
@@ -2562,19 +2756,40 @@ with transactions_tab:  # Core payment tracking functionality
                     st.error(f"Error saving transaction: {e}")
 
     # Filters for viewing transactions (moved below Add Transaction)
-    # Load people list for filter dropdown
+    # Load people list for filter dropdowns and adapt person list to selected type
     try:
         people_df_all = pd.read_csv(PEOPLE_FILE)
-        filtered_people = people_df_all['name'].dropna().astype(str).tolist()
     except Exception as e:
         st.warning(f"Could not load people for filter: {e}")
-        filtered_people = []
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        view_person = st.selectbox("Filter by Person", ["All"] + sorted(filtered_people), key="view_person_filter")
-    with col2:
+        people_df_all = pd.DataFrame(columns=["name", "category"])  # safe default
+
+    col_type, col_person, col_method = st.columns(3)
+    with col_type:
         view_type = st.selectbox("Filter by Type", ["All", "Paid to Me", "I Paid"], key="view_type_filter")
-    with col3:
+
+    # Build person options based on type selection
+    if not people_df_all.empty and 'name' in people_df_all.columns:
+        names_all = people_df_all['name'].astype(str).str.strip()
+        if 'category' in people_df_all.columns:
+            cat_series_all = people_df_all['category'].astype(str).str.strip().str.lower()
+            if view_type == "I Paid":
+                mask = cat_series_all == 'client'
+                people_for_filter = names_all[mask].dropna().tolist()
+            elif view_type == "Paid to Me":
+                mask = cat_series_all == 'investor'
+                people_for_filter = names_all[mask].dropna().tolist()
+            else:
+                # When view_type is All, show all people
+                people_for_filter = names_all.dropna().tolist()
+        else:
+            # No category column; show all names
+            people_for_filter = names_all.dropna().tolist()
+    else:
+        people_for_filter = []
+
+    with col_person:
+        view_person = st.selectbox("Filter by Person", ["All"] + sorted(people_for_filter), key="view_person_filter")
+    with col_method:
         view_method = st.selectbox("Filter by Method", ["All", "cash", "cheque"], key="view_method_filter")
 
     # List, edit, and delete transactions (moved below add form)
@@ -2585,7 +2800,10 @@ with transactions_tab:  # Core payment tracking functionality
         filtered_df = transactions_df.copy()
 
         if view_person != "All":
-            filtered_df = filtered_df[filtered_df['person'] == view_person]
+            # Normalize spaces/case to ensure reliable matching
+            filtered_df = filtered_df[
+                filtered_df['person'].astype(str).str.strip() == str(view_person).strip()
+            ]
         if view_type != "All":
             type_map = {"Paid to Me": "paid_to_me", "I Paid": "i_paid"}
             filtered_df = filtered_df[filtered_df['type'] == type_map.get(view_type, view_type)]
@@ -3373,10 +3591,9 @@ try:
             # Display summary
             st.sidebar.metric("Total Received", f"Rs. {total_received:,.2f}")
             st.sidebar.metric("Total Paid (by me)", f"Rs. {total_paid:,.2f}")
+            # Replace Net Balance metric with Total Client Expenses
             st.sidebar.metric("Total Client Expenses",
                               f"Rs. {total_client_expenses_for_sidebar:,.2f}")
-            st.sidebar.metric("Net Balance (Paid - Spent)",
-                              f"Rs. {total_paid - total_client_expenses_for_sidebar:,.2f}", delta_color="inverse")
 
             with st.sidebar.expander("Payment Methods"):
                 st.write("**Received**")
@@ -3395,6 +3612,12 @@ except Exception as e:
 
 with backup_tab:  # System management features including backup/restore
     st.subheader("🔄 Backup & Restore Data")
+    
+    # Auto-update and push public HTML summary on each run (only writes when content changes)
+    try:
+        update_public_html_if_stale()
+    except Exception:
+        pass
 
     col1, col2 = st.columns(2)
 
