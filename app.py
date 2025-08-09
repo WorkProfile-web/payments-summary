@@ -60,6 +60,17 @@ def write_csv_atomic(df, file_path: str) -> None:
     temp_path = file_path + '.tmp'
     df.to_csv(temp_path, index=False)
     os.replace(temp_path, file_path)
+    # If client expenses were updated, refresh docs immediately and push
+    try:
+        if os.path.abspath(file_path) == os.path.abspath(CLIENT_EXPENSES_FILE):
+            changed = regenerate_docs_index_html()
+            try:
+                git_push()
+            except Exception:
+                pass
+    except Exception:
+        # Never block saving due to docs update issues
+        pass
 
 import streamlit as st
 import pandas as pd
@@ -270,7 +281,7 @@ CSV_FILE = os.path.join(REPO_PATH, "payments.csv")
 PEOPLE_FILE = os.path.join(REPO_PATH, "people.csv")
 CLIENT_EXPENSES_FILE = os.path.join(REPO_PATH, "client_expenses.csv")
 SUMMARY_FILE = os.path.join(REPO_PATH, "docs/index.html")
-SUMMARY_URL = "https://atonomous.github.io/payments-summary/"
+SUMMARY_URL = "https://workprofile-web.github.io/payments-summary/"
 INVOICE_DIR = os.path.join(REPO_PATH, "docs", "invoices")
 
 # Utility: auto-update public HTML summary when data changes
@@ -303,18 +314,23 @@ def regenerate_docs_index_html() -> bool:
 
         try:
             pay_df = pd.read_csv(CSV_FILE, keep_default_na=False)
-            pay_df = clean_payments_data(pay_df)
-            total_received = pay_df[pay_df['type'].str.lower() == 'paid_to_me']['amount'].sum()
-            total_paid = pay_df[pay_df['type'].str.lower() == 'i_paid']['amount'].sum()
+            # Minimal normalization to avoid dependency on cleaners during docs rebuild
+            if 'type' in pay_df.columns:
+                pay_df['type'] = pay_df['type'].astype(str).str.strip().str.lower()
+            if 'amount' in pay_df.columns:
+                pay_df['amount'] = pd.to_numeric(pay_df['amount'], errors='coerce').fillna(0.0)
+            total_received = pay_df[pay_df.get('type', pd.Series(dtype=str)) == 'paid_to_me'].get('amount', pd.Series(dtype=float)).sum()
+            total_paid = pay_df[pay_df.get('type', pd.Series(dtype=str)) == 'i_paid'].get('amount', pd.Series(dtype=float)).sum()
         except Exception:
             pass
 
         try:
             exp_df = pd.read_csv(CLIENT_EXPENSES_FILE, keep_default_na=False)
-            exp_df = clean_client_expenses_data(exp_df)
-            exp_df['line_total'] = pd.to_numeric(exp_df['expense_amount'], errors='coerce').fillna(0.0) * \
-                                   pd.to_numeric(exp_df['expense_quantity'], errors='coerce').fillna(1.0)
-            total_client_expenses = exp_df['line_total'].sum()
+            # Minimal normalization
+            exp_df['expense_amount'] = pd.to_numeric(exp_df.get('expense_amount'), errors='coerce').fillna(0.0)
+            exp_df['expense_quantity'] = pd.to_numeric(exp_df.get('expense_quantity'), errors='coerce').fillna(1.0)
+            exp_df['line_total'] = exp_df['expense_amount'] * exp_df['expense_quantity']
+            total_client_expenses = float(exp_df['line_total'].sum())
         except Exception:
             pass
 

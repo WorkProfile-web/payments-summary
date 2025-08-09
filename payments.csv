@@ -1,3 +1,72 @@
 date,person,amount,type,status,description,payment_method,reference_number,cheque_status,transaction_status
-2025-08-10,Heelo tester,75000.0,paid_to_me,completed,CompleteInvestment,cash,A1245SSAd,,completed
-2025-08-10,Butt Feelings Phone,5000.0,i_paid,completed,FirstAgain99,cash,75487547,,completed
+2025-02-05,Butt Fitness,500000.0,i_paid,completed,Meezan Bank,cash,764206,,completed
+2025-11-05,Butt Fitness,1000000.0,i_paid,completed,Meezan Bank,cash,360842,,completed
+2025-05-13,Butt Fitness,1100000.0,i_paid,completed,Meezan Bank,cash,326547,,completed
+2025-05-19,Butt Fitness,650000.0,i_paid,completed,Meezan Bank,cash,494860,,completed
+2025-05-19,Butt Fitness,750000.0,i_paid,completed,Bank Alfa,cash,#FT251490RR2L3Q2X,,completed
+2025-05-30,Butt Fitness,1000000.0,i_paid,completed,Meezan Bank,cash,593031,,completed
+2025-06-06,Butt Fitness,1000000.0,i_paid,completed,Meezan Bank,cash,483955,,completed
+2025-05-06,Butt Fitness,3000000.0,i_paid,completed,Faysal Bank,cash,CA0000000011,,completed
+2025-09-05,Butt Fitness,2500000.0,i_paid,completed,Faysal Bank,cash,CA0000000039,,completed
+2025-06-16,Butt Fitness,3000000.0,i_paid,completed,Meezan Bank,cash,378200,,completed
+2025-06-23,Butt Fitness,3000000.0,i_paid,completed,Meezan Bank,cash,216760,,completed
+2025-06-26,Butt Fitness,2000000.0,i_paid,completed,Meezan Bank,cash,505213,,completed
+2025-01-07,Butt Fitness,1000000.0,i_paid,completed,Meezan Bank,cash,416723,,completed
+2025-08-07,Butt Fitness,500000.0,i_paid,completed,Meezan Bank,cash,842448,,completed
+2025-09-07,Butt Fitness,400000.0,i_paid,completed,Bank Alfa,cash,#FT251910XXPTDWXQ,,completed
+2025-07-25,Butt Fitness,200000.0,i_paid,completed,Meezan Bank,cash,411625,,completed
+2025-04-17,H.M. Fitness,100000.0,i_paid,completed,United Bank Limited,cash,230902,,completed
+2025-05-17,H.M. Fitness,500000.0,i_paid,completed,United Bank Limited,cash,577478,,completed
+2025-05-20,H.M. Fitness,500000.0,i_paid,completed,Bank Alfa,cash,FT2514101NWFDLBP,,completed
+2025-05-06,H.M. Fitness,500000.0,i_paid,completed,United Bank Limited,cash,798625,,completed
+2025-05-31,H.M. Fitness,1000000.0,i_paid,completed,United Bank Limited,cash,499282,,completed
+2025-06-16,H.M. Fitness,1000000.0,i_paid,completed,United Bank Limited,cash,373827,,completed
+2025-06-21,H.M. Fitness,532000.0,i_paid,completed,United Bank Limited,cash,509991,,completed
+2025-06-25,H.M. Fitness,500000.0,i_paid,completed,United Bank Limited,cash,425398,,completed
+2025-01-07,H.M. Fitness,800000.0,i_paid,completed,Faysal Bank,cheque,CA0000000024,processing done,completed
+2025-02-07,H.M. Fitness,700000.0,i_paid,completed,Bank Alfalah,cash,52372192,,completed
+2025-01-15,Rehmat Lawn Mover,5000000.0,i_paid,completed,Cash,cash,12345,,completed
+2025-01-22,Rehmat Lawn Mover,5000000.0,i_paid,completed,cash,cash,123456,,completed
+2025-07-26,Rehmat Lawn Mover,1000000.0,i_paid,completed,Bank Alfa,cash,#FT252070YQ608WY,,completed
+2025-06-03,Rehmat Lawn Mover,2000000.0,i_paid,completed,Faysal Bank,cheque,CA0000000007,received/given,completed
+2025-05-31,Rehmat Lawn Mover,1550000.0,i_paid,completed,Faysal Bank,cheque,CA0000000004,processing done,completed
+2025-05-29,Rehmat Lawn Mover,3060000.0,i_paid,completed,The Bank Of Punjab,cheque,8035950489,received/given,completed
+2025-05-29,Rehmat Lawn Mover,2000000.0,i_paid,completed,The Bank Of Punjab,cheque,8035950491,received/given,completed
+2025-05-23,Rehmat Lawn Mover,500000.0,i_paid,completed,Bank Alfa,cash,#FT25144151S9SG8V,,completed
+2025-05-23,Rehmat Lawn Mover,1500000.0,i_paid,completed,Meezan Bank,cash,297570,,completed
+2025-05-09,Rehmat Lawn Mover,5000000.0,i_paid,completed,Faysal Bank,cheque,3090301000001477,received/given,completed
+2025-07-11,Rehmat Lawn Mover,2000000.0,i_paid,completed,Cash Paid to Husnain,cash,1200000,,completed
+2025-05-12,Barkat Trading Corporation,2900000.0,i_paid,completed,online,cash,Invoice -386511,,completed
+2025-05-17,Barkat Trading Corporation,500000.0,i_paid,completed,online,cash,Invoice -386631,,completed
+2025-05-30,Barkat Trading Corporation,3000000.0,i_paid,completed,online,cash,invoice -62548,,completed
+2025-06-02,Barkat Trading Corporation,5000000.0,i_paid,completed,52372188,cash,invoice - 386621,,completed
+2025-06-12,Barkat Trading Corporation,5000000.0,i_paid,completed,Faysal Bank,cheque,CA0000000012,processing done,completed
+2025-06-14,Barkat Trading Corporation,8000000.0,i_paid,completed,Faysal Bank,cheque,CA0000000015,processing done,completed
+2025-06-16,Barkat Trading Corporation,8000000.0,i_paid,completed,Faysal Bank,cheque,CA0000000016,processing done,completed
+2025-06-21,Barkat Trading Corporation,34000.0,i_paid,completed,on data,cash,invoice #BTC-386718,,completed
+2025-06-26,Barkat Trading Corporation,6000000.0,i_paid,completed,Faysal Bank,cheque,CA0000000019,processing done,completed
+2025-06-27,Barkat Trading Corporation,4000000.0,i_paid,completed,Faysal Bank,cash,CA00000000021,,completed
+2025-07-01,Barkat Trading Corporation,4950000.0,i_paid,completed,Faysal Bank,cheque,CA0000000020,processing done,completed
+2025-07-18,Barkat Trading Corporation,2500000.0,i_paid,completed,Faysal Bank,cheque,0000000,processing done,completed
+2025-05-06,Sammi Tensile Work,1000000.0,i_paid,completed,Online transfer to Meezan Bank,cash,363755,,completed
+2025-05-07,Sammi Tensile Work,1000000.0,i_paid,completed,Online transfer to Meezan Bank,cash,550101,,completed
+2025-05-19,Sammi Tensile Work,1000000.0,i_paid,completed,Online transfer to Meezan Bank,cash,432401,,completed
+2025-06-22,Sammi Tensile Work,2000000.0,i_paid,completed,Online transfer to UBL,cash,504887,,completed
+2025-08-02,Faisalabad Light House,1000000.0,i_paid,completed,Inter Bank transfer,cash,FT252140P2FVNSV9,,completed
+2025-08-02,Faisalabad Light House,560000.0,i_paid,completed,Advance,cash,887,,completed
+2025-06-30,Mujahid Lights Lahore,48750.0,i_paid,completed,online,cash,392638,,completed
+2025-04-15,Mujahid Lights Lahore,568000.0,i_paid,completed,online,cash,833159,,completed
+2025-04-30,Mujahid Lights Lahore,720000.0,i_paid,completed,online,cash,713638,,completed
+2025-05-10,Mujahid Lights Lahore,400000.0,i_paid,completed,Bank Alfa,cash,FT251300KB4BNR8N,,completed
+2025-05-13,Mujahid Lights Lahore,1200000.0,i_paid,completed,Meezan Bank,cash,104226,,completed
+2025-05-17,Mujahid Lights Lahore,1000000.0,i_paid,completed,Bank Alfa,cash,FT25370KWT2XWR3,,completed
+2025-05-26,Mujahid Lights Lahore,1000000.0,i_paid,completed,ONLINE,cash,583809,,completed
+2025-05-26,Mujahid Lights Lahore,1000000.0,i_paid,completed,Meezan Bank,cash,599016,,completed
+2025-05-26,Mujahid Lights Lahore,1000000.0,i_paid,completed,Meezan Bank,cash,619342,,completed
+2025-06-03,Mujahid Lights Lahore,1000000.0,i_paid,completed,Meezan Bank,cash,811383,,completed
+2025-06-13,Mujahid Lights Lahore,1000000.0,i_paid,completed,Bank Alfa,cash,FT251640TVX71SP,,completed
+2025-06-17,Mujahid Lights Lahore,279200.0,i_paid,completed,Ailled Bank,cash,290600,,completed
+2025-07-07,Mujahid Lights Lahore,186600.0,i_paid,completed,Meezan Bank,cash,167263,,completed
+2025-08-07,Ashraf electric bedon rd,500000.0,i_paid,completed,Bank Alfa,cash,FT252190WTLCWKZ7,,completed
+2025-07-08,Ashraf electric bedon rd,1000000.0,i_paid,completed,Bank AL Habib,cash,829692,,completed
+2025-07-21,Ashraf electric bedon rd,750000.0,i_paid,completed,Bank AL Habib,cash,429687,,completed
