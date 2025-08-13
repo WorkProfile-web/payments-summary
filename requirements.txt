@@ -1,6 +1,5 @@
-streamlit==1.22.0
-pandas==1.5.3
-gitpython==3.1.31
+streamlit
+pandas
+gitpython
 
-pip install WeasyPrint
-Visualc++
+WeasyPrint
