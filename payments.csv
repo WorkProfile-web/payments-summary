@@ -1,6 +1,6 @@
 date,person,amount,type,status,description,payment_method,reference_number,cheque_status,transaction_status
 2025-02-05,Butt Fitness,500000.0,i_paid,completed,Meezan Bank,cash,764206,,completed
-2025-11-05,Butt Fitness,1000000.0,i_paid,completed,Meezan Bank Limited,cash,360842,,completed
+2025-11-05,Butt Fitness,1000000.0,i_paid,completed,Meezan Bank,cash,360842,,completed
 2025-05-13,Butt Fitness,1100000.0,i_paid,completed,Meezan Bank,cash,326547,,completed
 2025-05-19,Butt Fitness,650000.0,i_paid,completed,Meezan Bank,cash,494860,,completed
 2025-05-19,Butt Fitness,750000.0,i_paid,completed,Bank Alfa,cash,#FT251490RR2L3Q2X,,completed
@@ -70,3 +70,6 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-08-07,Ashraf electric bedon rd,500000.0,i_paid,completed,Bank Alfa,cash,FT252190WTLCWKZ7,,completed
 2025-07-08,Ashraf electric bedon rd,1000000.0,i_paid,completed,Bank AL Habib,cash,829692,,completed
 2025-07-21,Ashraf electric bedon rd,750000.0,i_paid,completed,Bank AL Habib,cash,429687,,completed
+2025-08-08,Mujahid Lights Lahore,500000.0,i_paid,completed,Bank Alfa,cash,FT252200DSFRFN2M,,completed
+2025-07-01,Barkat Trading Corporation,4950000.0,i_paid,completed,Faysal Bank,cash,CA00000000200,,completed
+2025-07-08,Barkat Trading Corporation,2500000.0,i_paid,completed,Bank,cash,12345aa,,completed

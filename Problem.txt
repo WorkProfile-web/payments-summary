@@ -1,0 +1,1 @@
+CLients_summary in html not has filters
