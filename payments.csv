@@ -71,4 +71,3 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-07-08,Ashraf electric bedon rd,1000000.0,i_paid,completed,Bank AL Habib,cash,829692,,completed
 2025-07-21,Ashraf electric bedon rd,750000.0,i_paid,completed,Bank AL Habib,cash,429687,,completed
 2025-08-08,Mujahid Lights Lahore,500000.0,i_paid,completed,Bank Alfa,cash,FT252200DSFRFN2M,,completed
-2025-07-08,Barkat Trading Corporation,2500000.0,i_paid,completed,Bank,cash,12345aa,,completed
