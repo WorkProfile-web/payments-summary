@@ -74,3 +74,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-08-07,Ashraf electric bedon rd,500000.0,i_paid,completed,Bank Alfa,cash,FT252190WTLCWK27,,completed
 2025-08-16,Ashraf electric bedon rd,500000.0,i_paid,completed,Faysal Bank,cash,526338,,completed
 2025-08-18,Ashraf electric bedon rd,500000.0,i_paid,completed,Faysal Bank,cash,386112,,completed
+2025-05-28,Kollective Solution PU Machine,400000.0,i_paid,completed,online,cash,949910,,completed
