@@ -79,3 +79,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-08-05,District Jail Lahore Open Gym,18000.0,i_paid,completed,Mazda rent,cash,1234,,completed
 2025-08-06,District Jail Lahore Open Gym,50000.0,i_paid,completed,Bank Alfa,cash,#300113776499,,completed
 2025-08-06,District Jail Lahore Open Gym,129600.0,i_paid,completed,Bank Alfa,cash,#279729840395,,completed
+2025-08-06,District Jail Lahore Open Gym,42000.0,i_paid,completed,Skill Bank,cash,231468,,completed
