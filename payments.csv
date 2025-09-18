@@ -92,3 +92,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-09-11,Mujahid Lights Lahore,500000.0,i_paid,completed,Meezan Bank,cash,822325,,completed
 2025-09-05,Mujahid Lights Lahore,1000000.0,i_paid,completed,Meezan Bank,cash,499174,,completed
 2025-09-17,Mujahid Lights Lahore,350000.0,i_paid,completed,Faysal Bank,cash,747186,,completed
+2025-09-15,Ashraf electric bedon rd,300000.0,i_paid,completed,cash,cash,1543abdef,,completed
