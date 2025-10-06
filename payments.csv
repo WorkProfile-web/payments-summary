@@ -97,3 +97,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-10-03,Sabir paint ihr,50000.0,i_paid,completed,Bank Alfa,cash,#60325514992,,completed
 2025-10-05,Zuhaib,10000.0,i_paid,completed,Meezan Bank,cash,538385,,completed
 2025-09-17,Zuhaib,35000.0,paid_to_me,completed,Meezan Bank,cash,984029,,completed
+2025-09-26,Zuhaib,40000.0,i_paid,completed,Meezan Bank,cash,772267,,completed
