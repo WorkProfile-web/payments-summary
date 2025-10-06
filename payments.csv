@@ -99,3 +99,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-09-17,Zuhaib,35000.0,paid_to_me,completed,Meezan Bank,cash,984029,,completed
 2025-09-26,Zuhaib,40000.0,i_paid,completed,Meezan Bank,cash,772267,,completed
 2025-09-27,Zuhaib,18000.0,i_paid,completed,Meezan B ank,cash,688579,,completed
+2025-10-06,Zuhaib,15000.0,i_paid,completed,cash,cash,12345abc,,completed
