@@ -153,3 +153,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-12-11,Sailkot,250000.0,i_paid,completed,Transfer to account,cash,45670,,completed
 2025-12-13,Sailkot,150000.0,i_paid,completed,Transfer to account,cash,786543,,completed
 2025-12-13,Sailkot,200000.0,i_paid,completed,Transfer to account,cash,567890,,completed
+2025-12-13,Sailkot,150000.0,i_paid,completed,waqas ko transfer to account,cash,322345,,completed
