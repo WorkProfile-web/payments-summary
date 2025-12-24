@@ -108,3 +108,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-01,Gojra,150000.0,i_paid,completed,receive cash,cash,asdf,,completed
 2025-11-03,Gojra,200000.0,i_paid,completed,receive account,cash,545454,,completed
 2025-11-03,Gojra,133000.0,paid_to_me,completed,100 rate samait account,cash,125454,,completed
+2025-11-06,Gojra,300000.0,i_paid,completed,2 adad dumper,cash,565654,,completed
