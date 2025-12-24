@@ -105,3 +105,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-24,Faisalabad Light House,500000.0,i_paid,completed,Bank alfa,cash,#272088491495,,completed
 2025-10-27,Gojra,50000.0,i_paid,completed,receive account,cash,1212abc,,completed
 2025-10-31,Gojra,100000.0,i_paid,completed,receive account,cash,54fgh,,completed
+2025-11-01,Gojra,150000.0,i_paid,completed,receive cash,cash,asdf,,completed
