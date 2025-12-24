@@ -120,3 +120,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-16,Gojra,196500.0,i_paid,completed,150 bag semait,cash,65432,,completed
 2025-11-17,Gojra,100000.0,i_paid,completed,cash receive for account,cash,98657,,completed
 2025-11-20,Gojra,100000.0,i_paid,completed,Account receive,cash,5436,,completed
+2025-11-22,Gojra,45000.0,i_paid,completed,cash,cash,543698,,completed
