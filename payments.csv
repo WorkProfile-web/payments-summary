@@ -139,3 +139,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-12-21,Gojra,276000.0,i_paid,completed,Rana javed semit ky liya cash,cash,5678998,,completed
 2025-11-03,Gojra,133000.0,i_paid,completed,100 rate samait account,cash,12345687,,completed
 2025-11-27,Gojra,15000.0,i_paid,completed,zubira hassan amjid,cash,7654321,,completed
+2025-11-27,Gojra,40000.0,i_paid,completed,zubira hassan amjid ko cash,cash,090876,,completed
