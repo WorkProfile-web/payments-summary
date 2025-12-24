@@ -142,3 +142,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-27,Gojra,40000.0,i_paid,completed,zubira hassan amjid ko cash,cash,090876,,completed
 2025-11-26,Sailkot,7500.0,i_paid,completed,Zubair hassan cash in hand,cash,1234590,,completed
 2025-11-26,Sailkot,15000.0,i_paid,completed,Bhai ali hssan cash in hand,cash,5665432,,completed
+2025-11-26,Sailkot,50000.0,paid_to_me,completed,Bhai ali hssan cash in account,cash,34543,,completed
