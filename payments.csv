@@ -137,3 +137,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-12-13,Gojra,200000.0,i_paid,completed,afani shab amjid ky account,cash,654389,,completed
 2025-12-19,Gojra,195000.0,i_paid,completed,M.naeem breaker ky liya,cash,678899,,completed
 2025-12-21,Gojra,276000.0,i_paid,completed,Rana javed semit ky liya cash,cash,5678998,,completed
+2025-11-03,Gojra,133000.0,i_paid,completed,100 rate samait account,cash,12345687,,completed
