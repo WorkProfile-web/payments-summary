@@ -93,7 +93,6 @@ original_transaction_ref_num,expense_date,expense_person,expense_category,expens
 1234,2025-08-10,District Jail Lahore Open Gym,General,3000.0,1.0,labour exp
 1234567,2025-10-17,Bill expences PMU,General,486000.0,1.0,CASH
 ,2025-12-08,Utility Bill,General,6070.0,1.0,meezan bank
-,2025-11-20,Gojra,General,25000.0,1.0,amjia account
 ,2025-11-20,Gojra,General,20000.0,1.0,waheeda account
 ,2025-11-22,Gojra,General,5000.0,1.0,amjia account
 ,2025-11-24,Gojra,General,2000.0,1.0,amjia account
