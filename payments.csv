@@ -145,3 +145,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-26,Sailkot,50000.0,paid_to_me,completed,Bhai ali hssan cash in account,cash,34543,,completed
 2025-12-02,Sailkot,25000.0,i_paid,completed,zubair hassan cash in account,cash,5454567,,completed
 2025-12-04,Sailkot,20000.0,i_paid,completed,zubair hassan cash in account,cash,1234343,,completed
+2025-12-04,Sailkot,200000.0,i_paid,completed,Bhai ali hssan cash samit ky liya,cash,321345,,completed
