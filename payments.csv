@@ -113,3 +113,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-08,Gojra,234000.0,i_paid,completed,steel,cash,67876,,completed
 2025-11-08,Gojra,50000.0,i_paid,completed,Bricks,cash,78787,,completed
 2025-11-08,Gojra,50000.0,i_paid,completed,Account,cash,8797,,completed
+2025-11-09,Gojra,180000.0,i_paid,completed,steel ky liya,cash,4675,,completed
