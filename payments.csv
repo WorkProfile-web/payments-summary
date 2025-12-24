@@ -156,3 +156,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-12-13,Sailkot,150000.0,i_paid,completed,waqas ko transfer to account,cash,322345,,completed
 2025-12-20,Sailkot,100000.0,i_paid,completed,cash receive,cash,78906,,completed
 2025-12-20,Sailkot,500000.0,i_paid,completed,waqas ky account may transfer,cash,432167,,completed
+2025-11-27,Sailkot,50000.0,i_paid,completed,Bhai ali hssan cash in account,cash,123876,,completed
