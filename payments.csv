@@ -124,3 +124,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-24,Gojra,50000.0,i_paid,completed,Account receive,cash,765as,,completed
 2025-11-28,Gojra,200000.0,i_paid,completed,cash,cash,6512,,completed
 2025-11-25,Gojra,10000.0,i_paid,completed,zubira hassan amjid,cash,56784,,completed
+2025-11-27,Gojra,15000.0,paid_to_me,completed,zubira hassan amjid,cash,654323,,completed
