@@ -121,3 +121,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-11-17,Gojra,100000.0,i_paid,completed,cash receive for account,cash,98657,,completed
 2025-11-20,Gojra,100000.0,i_paid,completed,Account receive,cash,5436,,completed
 2025-11-22,Gojra,45000.0,i_paid,completed,cash,cash,543698,,completed
+2025-11-24,Gojra,50000.0,i_paid,completed,Account receive,cash,765as,,completed
