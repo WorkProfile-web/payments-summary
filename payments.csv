@@ -136,3 +136,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-12-11,Gojra,200000.0,i_paid,completed,zubira account,cash,789065,,completed
 2025-12-13,Gojra,200000.0,i_paid,completed,afani shab amjid ky account,cash,654389,,completed
 2025-12-19,Gojra,195000.0,i_paid,completed,M.naeem breaker ky liya,cash,678899,,completed
+2025-12-21,Gojra,276000.0,i_paid,completed,Rana javed semit ky liya cash,cash,5678998,,completed
