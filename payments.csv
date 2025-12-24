@@ -150,3 +150,4 @@ date,person,amount,type,status,description,payment_method,reference_number,chequ
 2025-12-05,Sailkot,521000.0,i_paid,completed,Sariya 2250nar 10 kg,cash,322113,,completed
 2025-12-07,Sailkot,200000.0,i_paid,completed,bhai ali hassan waqas samiat rata,cash,54678,,completed
 2025-12-07,Sailkot,150000.0,i_paid,completed,Bhai ali hssan cash in account,cash,98760,,completed
+2025-12-11,Sailkot,250000.0,i_paid,completed,Transfer to account,cash,45670,,completed
