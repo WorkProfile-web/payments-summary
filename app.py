@@ -3201,6 +3201,43 @@ with expenses_tab:  # Client Expenses
         current_client_index = 0
         client_people = []
 
+    # Category management (outside form)
+    st.markdown("#### Manage Expense Categories")
+    col_cat_mgmt1, col_cat_mgmt2 = st.columns([3, 1])
+    with col_cat_mgmt1:
+        if st.session_state.get('show_add_category_input', False):
+            new_category = st.text_input("New Category Name", key='new_category_input', placeholder="e.g., Equipment")
+    with col_cat_mgmt2:
+        if not st.session_state.get('show_add_category_input', False):
+            if st.button("➕ Add Category", key='show_add_cat_btn'):
+                st.session_state['show_add_category_input'] = True
+                st.rerun()
+        else:
+            col_save, col_cancel = st.columns(2)
+            with col_save:
+                if st.button("💾 Save", key='save_new_cat_btn'):
+                    new_cat = st.session_state.get('new_category_input', '').strip()
+                    if new_cat:
+                        all_existing = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
+                        if new_cat not in all_existing:
+                            if 'custom_expense_categories' not in st.session_state:
+                                st.session_state['custom_expense_categories'] = []
+                            st.session_state['custom_expense_categories'].append(new_cat)
+                            st.session_state['add_client_expense_category'] = new_cat
+                            st.session_state['show_add_category_input'] = False
+                            st.success(f"Category '{new_cat}' added!")
+                            st.rerun()
+                        else:
+                            st.warning("Category already exists!")
+                    else:
+                        st.warning("Please enter a category name.")
+            with col_cancel:
+                if st.button("❌ Cancel", key='cancel_new_cat_btn'):
+                    st.session_state['show_add_category_input'] = False
+                    st.rerun()
+
+    st.markdown("---")
+    st.markdown("#### Add New Expense")
     with st.form("client_expense_form", clear_on_submit=False):
         st.session_state['selected_client_for_expense'] = st.selectbox(
             "Select Client",
@@ -3244,31 +3281,6 @@ with expenses_tab:  # Client Expenses
                 key='add_client_expense_category'
             )
             
-            # Add new category button
-            col_cat1, col_cat2 = st.columns([3, 1])
-            with col_cat1:
-                if st.session_state.get('show_add_category_input', False):
-                    new_category = st.text_input("New Category Name", key='new_category_input', placeholder="e.g., Equipment")
-            with col_cat2:
-                if not st.session_state.get('show_add_category_input', False):
-                    if st.button("➕ Add Category", key='show_add_cat_btn'):
-                        st.session_state['show_add_category_input'] = True
-                        st.rerun()
-                else:
-                    if st.button("💾 Save", key='save_new_cat_btn'):
-                        new_cat = st.session_state.get('new_category_input', '').strip()
-                        if new_cat and new_cat not in all_expense_categories:
-                            if 'custom_expense_categories' not in st.session_state:
-                                st.session_state['custom_expense_categories'] = []
-                            st.session_state['custom_expense_categories'].append(new_cat)
-                            st.session_state['add_client_expense_category'] = new_cat
-                            st.session_state['show_add_category_input'] = False
-                            st.success(f"Category '{new_cat}' added!")
-                            st.rerun()
-                        elif new_cat in all_expense_categories:
-                            st.warning("Category already exists!")
-                        else:
-                            st.warning("Please enter a category name.")
             expense_description = st.text_input(
                 "Expense Description",
                 value=st.session_state['add_client_expense_description'],
