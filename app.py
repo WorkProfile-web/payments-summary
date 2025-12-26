@@ -1280,8 +1280,8 @@ class HTMLGenerator:
             if 'cash' in payment_totals.columns and 'i_paid' in payment_totals.index else 0,
             'cheque_paid': payment_totals.loc['i_paid', 'cheque']
             if 'cheque' in payment_totals.columns and 'i_paid' in payment_totals.index else 0,
-            'net_balance': (df[df['type'] == 'paid_to_me']['amount'].sum() -
-                            df[df['type'] == 'i_paid']['amount'].sum())
+            'net_balance': (df[df['type'] == 'i_paid']['amount'].sum() -
+                            df[df['type'] == 'paid_to_me']['amount'].sum())
         }
 
 
@@ -1945,9 +1945,9 @@ def generate_html_summary(input_df: pd.DataFrame) -> None:
                     </div>
                 </div>
                 <div class="card-details">
-                    <div><i class="fas fa-info-circle"></i> Received - Paid</div>
+                    <div><i class="fas fa-info-circle"></i> Paid - Received (Debit - Credit)</div>
                     <div style="margin-top: 10px;">
-                        {'<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Positive Balance</span>' if totals['net_balance'] >= 0 else '<span style="color: #dc3545;"><i class="fas fa-exclamation-circle"></i> Negative Balance</span>'}
+                        {'<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Positive Balance (Overpaid)</span>' if totals['net_balance'] >= 0 else '<span style="color: #dc3545;"><i class="fas fa-exclamation-circle"></i> Negative Balance (Owing)</span>'}
                     </div>
                 </div>
             </div>
@@ -3524,7 +3524,7 @@ try:
                                         == 'paid_to_me']['amount'].sum()
             total_paid = sidebar_df[sidebar_df['type']
                                     == 'i_paid']['amount'].sum()
-            net_balance = total_received - total_paid
+            net_balance = total_paid - total_received
 
             # Calculate by payment method
             cash_received = sidebar_df[(sidebar_df['type'] == 'paid_to_me') & (
