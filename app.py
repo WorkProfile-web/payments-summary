@@ -106,7 +106,7 @@ class Config:
         "received/given", "processing", "bounced", "processing done"]
     VALID_TRANSACTION_STATUSES: List[str] = ["completed", "pending"]
     VALID_EXPENSE_CATEGORIES: List[str] = [
-        "General", "Salaries", "Rent", "Utilities", "Supplies", "Travel", "Other"]
+        "Labour", "Material", "Travel", "Food & Beverages", "Accomodation", "General"]
 
     # Column definitions for each data type
     PAYMENT_COLUMNS: List[str] = [
@@ -271,7 +271,9 @@ def init_state():
         'expense_date_filter_start': datetime.now().date().replace(day=1),
         'expense_date_filter_end': datetime.now().date(),
         'expense_category_filter': "All",
-        'backup_created_path': None
+        'backup_created_path': None,
+        'custom_expense_categories': [],
+        'show_add_category_input': False
     }
     for k in keys:
         if k not in st.session_state:
@@ -863,17 +865,17 @@ def generate_inquiry_pdf(person_name: str, start_date: datetime, end_date: datet
         total_credit = 0.0
         for i, row in enumerate(sub.itertuples(index=False), start=1):
             date_str = getattr(row, 'date').strftime('%Y-%m-%d') if pd.notna(getattr(row, 'date')) else ''
-            credit = float(getattr(row, 'amount') or 0.0)
+            debit = float(getattr(row, 'amount') or 0.0)
             _pdf_table_row(
                 pdf,
                 date_str,
+                debit,
                 0.0,
-                credit,
                 getattr(row, 'description'),
                 str(i),
                 getattr(row, 'reference_number')
             )
-            total_credit += credit
+            total_debit += debit
 
         # Totals
         pdf.set_font('Helvetica', 'B', 10)
@@ -900,7 +902,7 @@ def generate_inquiry_pdf(person_name: str, start_date: datetime, end_date: datet
         return None
 
 
-def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime) -> Optional[str]:
+def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime, category: Optional[str] = None) -> Optional[str]:
     try:
         df = pd.read_csv(CLIENT_EXPENSES_FILE, dtype={'original_transaction_ref_num': str}, keep_default_na=False)
         df = clean_client_expenses_data(df)
@@ -909,6 +911,9 @@ def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime
             (df['expense_date'] >= pd.to_datetime(start_date)) &
             (df['expense_date'] <= pd.to_datetime(end_date))
         )
+        # Add category filter if specified
+        if category and category != "All":
+            mask = mask & (df['expense_category'].astype(str).str.strip() == str(category).strip())
         sub = df.loc[mask].copy().sort_values('expense_date')
         sub['line_total'] = sub['expense_amount'] * sub['expense_quantity']
 
@@ -952,7 +957,7 @@ def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime
         return None
 
 
-def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datetime) -> Optional[str]:
+def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datetime, category: Optional[str] = None) -> Optional[str]:
     try:
         pay = pd.read_csv(CSV_FILE, dtype={'reference_number': str}, keep_default_na=False)
         pay['reference_number'] = pay['reference_number'].astype(str).str.strip()
@@ -964,7 +969,7 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
             (pay['date'] <= pd.to_datetime(end_date))
         )
         pay_sub = pay.loc[pay_mask, ['date', 'amount', 'description', 'reference_number']].copy()
-        pay_sub['kind'] = 'credit'
+        pay_sub['kind'] = 'debit'
 
         exp = pd.read_csv(CLIENT_EXPENSES_FILE, dtype={'original_transaction_ref_num': str}, keep_default_na=False)
         exp = clean_client_expenses_data(exp)
@@ -973,15 +978,18 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
             (exp['expense_date'] >= pd.to_datetime(start_date)) &
             (exp['expense_date'] <= pd.to_datetime(end_date))
         )
+        # Add category filter if specified
+        if category and category != "All":
+            exp_mask = exp_mask & (exp['expense_category'].astype(str).str.strip() == str(category).strip())
         exp_sub = exp.loc[exp_mask, ['expense_date', 'expense_amount', 'expense_quantity', 'expense_description', 'original_transaction_ref_num']].copy()
         exp_sub['line_total'] = exp_sub['expense_amount'] * exp_sub['expense_quantity']
         exp_sub['kind'] = 'debit'
 
         # Normalize columns
         pay_sub = pay_sub.rename(columns={
-            'date': 'date', 'amount': 'credit', 'description': 'description', 'reference_number': 'receipt_id'
+            'date': 'date', 'amount': 'debit', 'description': 'description', 'reference_number': 'receipt_id'
         })
-        pay_sub['debit'] = 0.0
+        pay_sub['credit'] = 0.0
 
         exp_sub = exp_sub.rename(columns={
             'expense_date': 'date', 'line_total': 'debit', 'expense_description': 'description', 'original_transaction_ref_num': 'receipt_id'
@@ -2274,10 +2282,10 @@ def generate_inquiry_pdf(person_name, start_date, end_date):
         for _, row in filtered_df.iterrows():
             pdf.cell(col_widths[0], 8, str(
                 row['date'].strftime('%Y-%m-%d')), 1, 0, 'C')
-            # Debit (what client spent - 0 for inquiry)
-            pdf.cell(col_widths[1], 8, "0.00", 1, 0, 'R')
-            # Credit (what I paid)
-            pdf.cell(col_widths[2], 8, f"{row['amount']:,.2f}", 1, 0, 'R')
+            # Debit (what I paid to client)
+            pdf.cell(col_widths[1], 8, f"{row['amount']:,.2f}", 1, 0, 'R')
+            # Credit (money received - 0 for inquiry)
+            pdf.cell(col_widths[2], 8, "0.00", 1, 0, 'R')
             pdf.cell(col_widths[3], 8, str(row['description'])[:20], 1, 0, 'L')
             # Serial ID
             pdf.cell(col_widths[4], 8, f"INQ-{serial_counter:03d}", 1, 0, 'C')
@@ -2289,10 +2297,9 @@ def generate_inquiry_pdf(person_name, start_date, end_date):
 
         pdf.ln(5)
         pdf.set_font('Arial', 'B', 10)
-        pdf.cell(0, 8, "Total Debit (Client Spent): Rs. 0.00", 0, 1, 'R')
-        pdf.cell(
-            0, 8, f"Total Credit (I Paid): Rs. {total_credit:,.2f}", 0, 1, 'R')
-        pdf.cell(0, 8, f"Net Balance: Rs. {total_credit:,.2f}", 0, 1, 'R')
+        pdf.cell(0, 8, f"Total Debit (I Paid): Rs. {total_credit:,.2f}", 0, 1, 'R')
+        pdf.cell(0, 8, "Total Credit (Received): Rs. 0.00", 0, 1, 'R')
+        pdf.cell(0, 8, f"Net Balance: Rs. -{total_credit:,.2f}", 0, 1, 'R')
 
         generate_pdf_footer(pdf)
 
@@ -2311,18 +2318,23 @@ def generate_inquiry_pdf(person_name, start_date, end_date):
 # Function to generate Bill Report (Client Expenses)
 
 
-def generate_bill_pdf(person_name, start_date, end_date):
+def generate_bill_pdf(person_name, start_date, end_date, category=None):
     try:
         df = pd.read_csv(CLIENT_EXPENSES_FILE, dtype={
                          'original_transaction_ref_num': str, 'expense_person': str}, keep_default_na=False)
         df = ExpenseCleaner.clean_client_expenses_data(df)
         df['total_line_amount'] = df['expense_amount'] * df['expense_quantity']
 
-        filtered_df = df[
+        # Build filter mask
+        mask = (
             (df['expense_person'] == person_name) &
             (df['expense_date'] >= start_date) &
             (df['expense_date'] <= end_date)
-        ].copy()
+        )
+        # Add category filter if specified
+        if category and category != "All":
+            mask = mask & (df['expense_category'].astype(str).str.strip() == str(category).strip())
+        filtered_df = df[mask].copy()
 
         if filtered_df.empty:
             st.warning(
@@ -2377,7 +2389,7 @@ def generate_bill_pdf(person_name, start_date, end_date):
         pdf.set_font('Arial', 'B', 10)
         pdf.cell(
             0, 8, f"Total Debit (Client Spent): Rs. {total_debit:,.2f}", 0, 1, 'R')
-        pdf.cell(0, 8, "Total Credit (I Paid): Rs. 0.00", 0, 1, 'R')
+        pdf.cell(0, 8, "Total Credit (Received): Rs. 0.00", 0, 1, 'R')
         pdf.cell(0, 8, f"Net Balance: Rs. {total_debit:,.2f}", 0, 1, 'R')
 
         # Footer
@@ -2399,7 +2411,7 @@ def generate_bill_pdf(person_name, start_date, end_date):
 # Function to generate combined Invoice Report (Debits and Credits)
 
 
-def generate_invoice_pdf(person_name, start_date, end_date):
+def generate_invoice_pdf(person_name, start_date, end_date, category=None):
     try:
         payments_df = pd.read_csv(
             CSV_FILE, dtype={'reference_number': str}, keep_default_na=False)
@@ -2423,11 +2435,15 @@ def generate_invoice_pdf(person_name, start_date, end_date):
         ].copy()
 
         # Filter expenses by client (what client spent - debits)
-        expenses_filtered = expenses_df[
+        expense_mask = (
             (expenses_df['expense_person'] == person_name) &
             (expenses_df['expense_date'] >= start_date) &
             (expenses_df['expense_date'] <= end_date)
-        ].copy()
+        )
+        # Add category filter if specified
+        if category and category != "All":
+            expense_mask = expense_mask & (expenses_df['expense_category'].astype(str).str.strip() == str(category).strip())
+        expenses_filtered = expenses_df[expense_mask].copy()
 
         if payments_filtered.empty and expenses_filtered.empty:
             st.warning(
@@ -2445,12 +2461,12 @@ def generate_invoice_pdf(person_name, start_date, end_date):
         # Combine all transactions into one list for chronological display
         all_transactions = []
 
-        # Add payment transactions (credits - what I paid)
+        # Add payment transactions (debits - what I paid)
         for _, row in payments_filtered.iterrows():
             all_transactions.append({
                 'date': row['date'],
-                'debit': 0.0,
-                'credit': row['amount'],
+                'debit': row['amount'],
+                'credit': 0.0,
                 'description': f"Payment: {row['description']}",
                 'type': 'payment',
                 'reference': row['reference_number']
@@ -2500,14 +2516,14 @@ def generate_invoice_pdf(person_name, start_date, end_date):
             total_credits += transaction['credit']
             serial_counter += 1
 
-        # Calculate net balance (credits - debits)
-        net_balance = total_credits - total_debits
+        # Calculate net balance (debits - credits)
+        net_balance = total_debits - total_credits
 
         # Totals and Net Balance
         pdf.ln(5)
         pdf.set_font('Arial', 'B', 10)
-        pdf.cell(0, 8, f"Total Debit (Client Spent): Rs. {total_debits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.cell(0, 8, f"Total Credit (I Paid): Rs. {total_credits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(0, 8, f"Total Debit (Payments & Expenses): Rs. {total_debits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(0, 8, f"Total Credit (Received): Rs. {total_credits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.cell(0, 8, f"Net Balance (Credit - Debit): Rs. {net_balance:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
         # Footer
@@ -3213,13 +3229,46 @@ with expenses_tab:  # Client Expenses
                 expense_quantity_value) if expense_quantity_value is not None else 1.0, key='add_client_expense_quantity')
 
         with col2_exp:
+            # Combine default and custom categories
+            all_expense_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
+            
+            # Show current category selection
+            current_category = st.session_state['add_client_expense_category']
+            if current_category not in all_expense_categories:
+                all_expense_categories.append(current_category)
+            
             expense_category = st.selectbox(
                 "Expense Category",
-                valid_expense_categories,
-                index=valid_expense_categories.index(
-                    st.session_state['add_client_expense_category']),
+                all_expense_categories,
+                index=all_expense_categories.index(current_category) if current_category in all_expense_categories else 0,
                 key='add_client_expense_category'
             )
+            
+            # Add new category button
+            col_cat1, col_cat2 = st.columns([3, 1])
+            with col_cat1:
+                if st.session_state.get('show_add_category_input', False):
+                    new_category = st.text_input("New Category Name", key='new_category_input', placeholder="e.g., Equipment")
+            with col_cat2:
+                if not st.session_state.get('show_add_category_input', False):
+                    if st.button("➕ Add Category", key='show_add_cat_btn'):
+                        st.session_state['show_add_category_input'] = True
+                        st.rerun()
+                else:
+                    if st.button("💾 Save", key='save_new_cat_btn'):
+                        new_cat = st.session_state.get('new_category_input', '').strip()
+                        if new_cat and new_cat not in all_expense_categories:
+                            if 'custom_expense_categories' not in st.session_state:
+                                st.session_state['custom_expense_categories'] = []
+                            st.session_state['custom_expense_categories'].append(new_cat)
+                            st.session_state['add_client_expense_category'] = new_cat
+                            st.session_state['show_add_category_input'] = False
+                            st.success(f"Category '{new_cat}' added!")
+                            st.rerun()
+                        elif new_cat in all_expense_categories:
+                            st.warning("Category already exists!")
+                        else:
+                            st.warning("Please enter a category name.")
             expense_description = st.text_input(
                 "Expense Description",
                 value=st.session_state['add_client_expense_description'],
@@ -3311,9 +3360,11 @@ with expenses_tab:  # Client Expenses
             help="Filter expenses by specific client"
         )
     with col_exp2:
+        # Include custom categories in filter
+        all_filter_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
         expense_category = st.selectbox(
             "📑 Category",
-            ["All"] + valid_expense_categories,
+            ["All"] + all_filter_categories,
             key="expense_category_filter",
             help="Filter by expense category"
         )
@@ -3543,9 +3594,14 @@ with expenses_tab:  # Client Expenses
                             st.error(f"Error loading client data for expense edit: {e}")
                             edited_expense_person = str(edit_data.get('expense_person', ''))
 
+                        # Include custom categories in edit form
+                        all_edit_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
+                        current_edit_category = str(edit_data.get('expense_category', 'General'))
+                        if current_edit_category not in all_edit_categories:
+                            all_edit_categories.append(current_edit_category)
                         edited_expense_category = st.selectbox(
-                            "Category", valid_expense_categories,
-                            index=valid_expense_categories.index(str(edit_data.get('expense_category', 'General'))),
+                            "Category", all_edit_categories,
+                            index=all_edit_categories.index(current_edit_category) if current_edit_category in all_edit_categories else 0,
                             key='edit_expense_category'
                         )
                         edited_expense_description = st.text_input(
@@ -3693,12 +3749,20 @@ with reports_tab:  # Reports and analytics features
     except Exception:
         report_people = []
 
-    col_r1, col_r2, col_r3 = st.columns(3)
+    col_r1, col_r2, col_r3, col_r4 = st.columns(4)
     with col_r1:
         report_type = st.selectbox("Report Type", ["Inquiry", "Bill", "Invoice"], key="report_type_select")
     with col_r2:
         report_person = st.selectbox("Person/Client", ["Select..."] + report_people, key="report_person_select")
     with col_r3:
+        # Show category filter only for Bill and Invoice reports
+        all_report_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
+        if report_type in ["Bill", "Invoice"]:
+            report_category = st.selectbox("Expense Category", ["All"] + all_report_categories, key="report_category_select")
+        else:
+            report_category = "All"
+            st.selectbox("Expense Category", ["All"], key="report_category_select", disabled=True, help="Category filter only available for Bill and Invoice reports")
+    with col_r4:
         today = datetime.now().date()
         default_start = today.replace(day=1)
         start_date = st.date_input("Start Date", value=default_start, key="report_start_date_input")
@@ -3715,12 +3779,14 @@ with reports_tab:  # Reports and analytics features
             s = pd.Timestamp(start_date)
             e = pd.Timestamp(end_date)
             pdf_path = None
+            # Get category filter value
+            category_filter = report_category if report_type in ["Bill", "Invoice"] else None
             if report_type == "Inquiry":
                 pdf_path = generate_inquiry_pdf(report_person, s, e)
             elif report_type == "Bill":
-                pdf_path = generate_bill_pdf(report_person, s, e)
+                pdf_path = generate_bill_pdf(report_person, s, e, category_filter)
             else:
-                pdf_path = generate_invoice_pdf(report_person, s, e)
+                pdf_path = generate_invoice_pdf(report_person, s, e, category_filter)
 
             if pdf_path:
                 st.success("Report generated successfully.")
