@@ -153,9 +153,9 @@ class DataCleaner:
             if col in df.columns:
                 df[col] = df[col].astype(str).str.strip().str.lower()
 
-        # Date normalization (keep as YYYY-MM-DD string if possible)
+        # Date normalization (keep as datetime)
         try:
-            df['date'] = pd.to_datetime(df['date'], errors='coerce').dt.strftime('%Y-%m-%d')
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
         except Exception:
             pass
 
