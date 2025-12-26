@@ -188,7 +188,7 @@ class ExpenseCleaner:
 
         # Date normalization
         try:
-            df['expense_date'] = pd.to_datetime(df['expense_date'], errors='coerce').dt.strftime('%Y-%m-%d')
+            df['expense_date'] = pd.to_datetime(df['expense_date'], errors='coerce')
         except Exception:
             pass
 
