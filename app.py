@@ -927,11 +927,11 @@ def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime
         for i, row in enumerate(sub.itertuples(index=False), start=1):
             date_val = getattr(row, 'expense_date')
             date_str = date_val.strftime('%Y-%m-%d') if pd.notna(date_val) else ''
-            debit = float(getattr(row, 'line_total') or 0.0)
+            credit = float(getattr(row, 'line_total') or 0.0)
             desc = getattr(row, 'expense_description')
             receipt_id = getattr(row, 'original_transaction_ref_num')
-            _pdf_table_row(pdf, date_str, debit, 0.0, desc, str(i), receipt_id)
-            total_debit += debit
+            _pdf_table_row(pdf, date_str, 0.0, credit, desc, str(i), receipt_id)
+            total_credit += credit
 
         pdf.set_font('Helvetica', 'B', 10)
         pdf.cell(25, 8, 'Totals', 1)
@@ -939,9 +939,9 @@ def generate_bill_pdf(person_name: str, start_date: datetime, end_date: datetime
         pdf.cell(25, 8, f"{total_credit:,.2f}", 1, 0, 'R')
         pdf.cell(114, 8, '', 1, 1)
 
-        net_balance = total_credit - total_debit
+        net_balance = total_debit - total_credit
         pdf.ln(4)
-        pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
+        pdf.cell(0, 8, f'Net Balance (Debit - Credit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
         # Ensure person-specific report directory: reports/<person_name_sanitized>/
@@ -983,7 +983,7 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
             exp_mask = exp_mask & (exp['expense_category'].astype(str).str.strip() == str(category).strip())
         exp_sub = exp.loc[exp_mask, ['expense_date', 'expense_amount', 'expense_quantity', 'expense_description', 'original_transaction_ref_num']].copy()
         exp_sub['line_total'] = exp_sub['expense_amount'] * exp_sub['expense_quantity']
-        exp_sub['kind'] = 'debit'
+        exp_sub['kind'] = 'credit'
 
         # Normalize columns
         pay_sub = pay_sub.rename(columns={
@@ -992,9 +992,9 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
         pay_sub['credit'] = 0.0
 
         exp_sub = exp_sub.rename(columns={
-            'expense_date': 'date', 'line_total': 'debit', 'expense_description': 'description', 'original_transaction_ref_num': 'receipt_id'
+            'expense_date': 'date', 'line_total': 'credit', 'expense_description': 'description', 'original_transaction_ref_num': 'receipt_id'
         })
-        exp_sub['credit'] = 0.0
+        exp_sub['debit'] = 0.0
 
         # Combine
         cols = ['date', 'debit', 'credit', 'description', 'receipt_id']
@@ -1028,9 +1028,9 @@ def generate_invoice_pdf(person_name: str, start_date: datetime, end_date: datet
         pdf.cell(25, 8, f"{total_credit:,.2f}", 1, 0, 'R')
         pdf.cell(114, 8, '', 1, 1)
 
-        net_balance = total_credit - total_debit
+        net_balance = total_debit - total_credit
         pdf.ln(4)
-        pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
+        pdf.cell(0, 8, f'Net Balance (Debit - Credit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
         # Ensure person-specific report directory: reports/<person_name_sanitized>/
@@ -2276,7 +2276,7 @@ def generate_inquiry_pdf(person_name, start_date, end_date):
         pdf.ln()
 
         pdf.set_font('Helvetica', '', 8)
-        total_credit = 0
+        total_debit = 0
         serial_counter = 1
 
         for _, row in filtered_df.iterrows():
@@ -2292,14 +2292,14 @@ def generate_inquiry_pdf(person_name, start_date, end_date):
             pdf.cell(col_widths[5], 8, str(row['reference_number'])[
                      :15], 1, 0, 'C')  # Receipt ID
             pdf.ln()
-            total_credit += row['amount']
+            total_debit += row['amount']
             serial_counter += 1
 
         pdf.ln(5)
         pdf.set_font('Arial', 'B', 10)
-        pdf.cell(0, 8, f"Total Debit (I Paid): Rs. {total_credit:,.2f}", 0, 1, 'R')
+        pdf.cell(0, 8, f"Total Debit (I Paid): Rs. {total_debit:,.2f}", 0, 1, 'R')
         pdf.cell(0, 8, "Total Credit (Received): Rs. 0.00", 0, 1, 'R')
-        pdf.cell(0, 8, f"Net Balance: Rs. -{total_credit:,.2f}", 0, 1, 'R')
+        pdf.cell(0, 8, f"Net Balance (Debit - Credit): Rs. {total_debit:,.2f}", 0, 1, 'R')
 
         generate_pdf_footer(pdf)
 
@@ -2363,16 +2363,17 @@ def generate_bill_pdf(person_name, start_date, end_date, category=None):
         # Table data
         pdf.set_font('Arial', '', 8)
         total_debit = 0
+        total_credit = 0
         serial_counter = 1
 
         for _, row in filtered_df.iterrows():
             pdf.cell(col_widths[0], 8, str(
                 row['expense_date'].strftime('%Y-%m-%d')), 1, 0, 'C')
-            # Debit (what client spent)
-            pdf.cell(col_widths[1], 8,
+            # Debit (what you paid - 0 for bill report)
+            pdf.cell(col_widths[1], 8, "0.00", 1, 0, 'R')
+            # Credit (client bills/expenses - amounts owed)
+            pdf.cell(col_widths[2], 8,
                      f"{row['total_line_amount']:,.2f}", 1, 0, 'R')
-            # Credit (what I paid - 0 for bill)
-            pdf.cell(col_widths[2], 8, "0.00", 1, 0, 'R')
             pdf.cell(
                 col_widths[3], 8, f"{row['expense_category']} - {str(row['expense_description'])[:15]}", 1, 0, 'L')
             # Serial ID
@@ -2381,16 +2382,16 @@ def generate_bill_pdf(person_name, start_date, end_date, category=None):
                 # Receipt ID
                 'original_transaction_ref_num', f"EXP-{serial_counter}"))[:15], 1, 0, 'C')
             pdf.ln()
-            total_debit += row['total_line_amount']
+            total_credit += row['total_line_amount']
             serial_counter += 1
 
         # Totals and Net Balance
         pdf.ln(5)
         pdf.set_font('Arial', 'B', 10)
         pdf.cell(
-            0, 8, f"Total Debit (Client Spent): Rs. {total_debit:,.2f}", 0, 1, 'R')
-        pdf.cell(0, 8, "Total Credit (Received): Rs. 0.00", 0, 1, 'R')
-        pdf.cell(0, 8, f"Net Balance: Rs. {total_debit:,.2f}", 0, 1, 'R')
+            0, 8, f"Total Debit (Payments Made): Rs. 0.00", 0, 1, 'R')
+        pdf.cell(0, 8, f"Total Credit (Bills/Expenses): Rs. {total_credit:,.2f}", 0, 1, 'R')
+        pdf.cell(0, 8, f"Net Balance (Debit - Credit): Rs. -{total_credit:,.2f}", 0, 1, 'R')
 
         # Footer
         generate_pdf_footer(pdf)
@@ -2426,7 +2427,7 @@ def generate_invoice_pdf(person_name, start_date, end_date, category=None):
         expenses_df['total_line_amount'] = expenses_df['expense_amount'] * \
             expenses_df['expense_quantity']
 
-        # Filter payments to client (what I paid - credits)
+        # Filter payments to client (money I paid out - debits)
         payments_filtered = payments_df[
             (payments_df['person'] == person_name) &
             (payments_df['type'] == 'i_paid') &
@@ -2434,7 +2435,7 @@ def generate_invoice_pdf(person_name, start_date, end_date, category=None):
             (payments_df['date'] <= end_date)
         ].copy()
 
-        # Filter expenses by client (what client spent - debits)
+        # Filter expenses by client (money client spent - debits)
         expense_mask = (
             (expenses_df['expense_person'] == person_name) &
             (expenses_df['expense_date'] >= start_date) &
@@ -2461,7 +2462,7 @@ def generate_invoice_pdf(person_name, start_date, end_date, category=None):
         # Combine all transactions into one list for chronological display
         all_transactions = []
 
-        # Add payment transactions (debits - what I paid)
+        # Add payment transactions (debits - money I paid)
         for _, row in payments_filtered.iterrows():
             all_transactions.append({
                 'date': row['date'],
@@ -2472,12 +2473,12 @@ def generate_invoice_pdf(person_name, start_date, end_date, category=None):
                 'reference': row['reference_number']
             })
 
-        # Add expense transactions (debits - what client spent)
+        # Add expense transactions (credits - bills/expenses owed)
         for _, row in expenses_filtered.iterrows():
             all_transactions.append({
                 'date': row['expense_date'],
-                'debit': row['total_line_amount'],
-                'credit': 0.0,
+                'debit': 0.0,
+                'credit': row['total_line_amount'],
                 'description': f"{row['expense_category']}: {row['expense_description']}",
                 'type': 'expense',
                 'reference': row.get('original_transaction_ref_num', 'N/A')
@@ -2522,9 +2523,9 @@ def generate_invoice_pdf(person_name, start_date, end_date, category=None):
         # Totals and Net Balance
         pdf.ln(5)
         pdf.set_font('Arial', 'B', 10)
-        pdf.cell(0, 8, f"Total Debit (Payments & Expenses): Rs. {total_debits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.cell(0, 8, f"Total Credit (Received): Rs. {total_credits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.cell(0, 8, f"Net Balance (Credit - Debit): Rs. {net_balance:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(0, 8, f"Total Debit (Payments Made): Rs. {total_debits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(0, 8, f"Total Credit (Bills/Expenses): Rs. {total_credits:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(0, 8, f"Net Balance (Debit - Credit): Rs. {net_balance:,.2f}", border=0, align='R', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
         # Footer
         generate_pdf_footer(pdf)
@@ -3266,7 +3267,7 @@ with expenses_tab:  # Client Expenses
                 expense_quantity_value) if expense_quantity_value is not None else 1.0, key='add_client_expense_quantity')
 
         with col2_exp:
-            # Combine default and custom categories
+            # Combine standard and custom categories only
             all_expense_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
             
             # Show current category selection
@@ -3372,7 +3373,7 @@ with expenses_tab:  # Client Expenses
             help="Filter expenses by specific client"
         )
     with col_exp2:
-        # Include custom categories in filter
+        # Include standard and custom categories only
         all_filter_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
         expense_category = st.selectbox(
             "📑 Category",
@@ -3606,7 +3607,7 @@ with expenses_tab:  # Client Expenses
                             st.error(f"Error loading client data for expense edit: {e}")
                             edited_expense_person = str(edit_data.get('expense_person', ''))
 
-                        # Include custom categories in edit form
+                        # Include standard and custom categories only
                         all_edit_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
                         current_edit_category = str(edit_data.get('expense_category', 'General'))
                         if current_edit_category not in all_edit_categories:
@@ -3768,6 +3769,7 @@ with reports_tab:  # Reports and analytics features
         report_person = st.selectbox("Person/Client", ["Select..."] + report_people, key="report_person_select")
     with col_r3:
         # Show category filter only for Bill and Invoice reports
+        # Include standard and custom categories only
         all_report_categories = valid_expense_categories + st.session_state.get('custom_expense_categories', [])
         if report_type in ["Bill", "Invoice"]:
             report_category = st.selectbox("Expense Category", ["All"] + all_report_categories, key="report_category_select")
