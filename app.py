@@ -884,9 +884,9 @@ def generate_inquiry_pdf(person_name: str, start_date: datetime, end_date: datet
         pdf.cell(25, 8, f"{total_credit:,.2f}", 1, 0, 'R')
         pdf.cell(114, 8, '', 1, 1)
 
-        net_balance = total_credit - total_debit
+        net_balance = total_debit - total_credit
         pdf.ln(4)
-        pdf.cell(0, 8, f'Net Balance (Credit - Debit): {net_balance:,.2f}', 0, 1, 'R')
+        pdf.cell(0, 8, f'Net Balance (Debit - Credit): {net_balance:,.2f}', 0, 1, 'R')
         PDFHelpers.generate_footer(pdf)
 
         # Ensure person-specific report directory: reports/<person_name_sanitized>/
